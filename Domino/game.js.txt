@@ -1,0 +1,180 @@
+let deck = [], playerHand = [], boardTiles = [];
+let currentDiff = 'orta';
+let myTea = parseInt(localStorage.getItem('domino_tea')) || 0;
+let myName = localStorage.getItem('domino_name') || "Oyuncu";
+let myId = localStorage.getItem('domino_id') || "DOM-" + Math.floor(1000 + Math.random() * 9000);
+
+localStorage.setItem('domino_id', myId);
+
+document.getElementById('header-name').innerText = myName;
+document.getElementById('tea-val').innerText = myTea;
+document.getElementById('my-id-display').innerText = myId;
+document.getElementById('name-input').value = myName;
+
+function setBotDiff(diff) {
+    currentDiff = diff;
+    ['asan', 'orta', 'cetin'].forEach(d => {
+        const btn = document.getElementById(`btn-diff-${d}`);
+        if (d === diff) {
+            btn.className = "py-2 text-xs font-medium rounded-lg border border-amber-500/60 bg-amber-500/20 text-amber-300";
+        } else {
+            btn.className = "py-2 text-xs font-medium rounded-lg border border-emerald-700/60 bg-emerald-900/50 text-slate-300";
+        }
+    });
+}
+
+function switchTab(tab) {
+    document.getElementById('screen-home').classList.add('hidden');
+    document.getElementById('screen-friends').classList.add('hidden');
+    document.getElementById('screen-game').classList.add('hidden');
+    document.getElementById('nav-home').classList.remove('active');
+    document.getElementById('nav-friends').classList.remove('active');
+    
+    if (tab === 'home') {
+        document.getElementById('screen-home').classList.remove('hidden');
+        document.getElementById('nav-home').classList.add('active');
+    } else if (tab === 'friends') {
+        document.getElementById('screen-friends').classList.remove('hidden');
+        document.getElementById('nav-friends').classList.add('active');
+    }
+}
+
+function updateProfileName() {
+    const val = document.getElementById('name-input').value.trim();
+    if (val) {
+        myName = val;
+        localStorage.setItem('domino_name', myName);
+        document.getElementById('header-name').innerText = myName;
+        alert("Ləqəbiniz yeniləndi!");
+    }
+}
+
+function openCreateRoomModal() {
+    const code = Math.floor(1000 + Math.random() * 9000);
+    document.getElementById('modal-title').innerText = "1v1 Dost Otağı";
+    document.getElementById('modal-body').innerHTML = `
+        <div class="text-center space-y-2">
+            <p class="text-xs text-slate-400">Bu kodu dostuna göndər:</p>
+            <div class="text-2xl font-mono font-bold text-amber-400 bg-emerald-900/50 p-2 rounded-lg">${code}</div>
+            <button onclick="startQuickMatch('Dost Otağı ${code}')" class="w-full py-2.5 bg-amber-500 text-slate-950 font-bold text-xs rounded-xl mt-2">Oyuna Başla</button>
+        </div>
+    `;
+    document.getElementById('modal').classList.remove('hidden');
+}
+
+function openJoinRoomModal() {
+    document.getElementById('modal-title').innerText = "Otağa Qoşul";
+    document.getElementById('modal-body').innerHTML = `
+        <div class="space-y-3">
+            <input type="text" id="room-code-in" placeholder="4 rəqəmli kodu yaz..." class="w-full bg-emerald-900/40 border border-emerald-700/50 rounded-lg p-2.5 text-xs text-white text-center font-mono">
+            <button onclick="joinRoomAction()" class="w-full py-2.5 bg-amber-500 text-slate-950 font-bold text-xs rounded-xl">Qoşul</button>
+        </div>
+    `;
+    document.getElementById('modal').classList.remove('hidden');
+}
+
+function joinRoomAction() {
+    const code = document.getElementById('room-code-in').value.trim();
+    if (code.length === 4) {
+        closeModal();
+        startQuickMatch(`Otaq ${code}`);
+    } else alert("Düzgün kod daxil edin!");
+}
+
+function closeModal() {
+    document.getElementById('modal').classList.add('hidden');
+}
+
+function startQuickMatch(modeLabel = "1v1 Canlı Matç") {
+    closeModal();
+    document.getElementById('screen-home').classList.add('hidden');
+    document.getElementById('screen-friends').classList.add('hidden');
+    document.getElementById('screen-game').classList.remove('hidden');
+    document.getElementById('game-mode-tag').innerText = modeLabel;
+    initDeck();
+}
+
+function startBotMatch(type) {
+    let title = type === '2x2' ? "2x2 Para (Botlar)" : `${type} Nəfərlik (${currentDiff.toUpperCase()})`;
+    startQuickMatch(title);
+}
+
+function initDeck() {
+    deck = [];
+    for (let i = 0; i <= 6; i++) {
+        for (let j = i; j <= 6; j++) deck.push([i, j]);
+    }
+    deck.sort(() => Math.random() - 0.5);
+    playerHand = deck.splice(0, 7);
+    boardTiles = [];
+    renderGame();
+}
+
+function renderGame() {
+    const boardDiv = document.getElementById('board');
+    boardDiv.innerHTML = boardTiles.length === 0 ? '<span class="w-full text-center text-xs text-emerald-600 font-medium">Masa boşdur</span>' : '';
+
+    boardTiles.forEach(t => {
+        const tileEl = document.createElement('div');
+        tileEl.className = 'domino-tile';
+        tileEl.innerHTML = `<div>${t[0]}</div><div style="width:75%; height:2px; background:currentColor; opacity:0.6;"></div><div>${t[1]}</div>`;
+        boardDiv.appendChild(tileEl);
+    });
+
+    const handDiv = document.getElementById('hand');
+    handDiv.innerHTML = '';
+    playerHand.forEach((t, idx) => {
+        const tileEl = document.createElement('div');
+        tileEl.className = 'domino-tile';
+        tileEl.innerHTML = `<div>${t[0]}</div><div style="width:75%; height:2px; background:currentColor; opacity:0.6;"></div><div>${t[1]}</div>`;
+        tileEl.onclick = () => playTile(idx);
+        handDiv.appendChild(tileEl);
+    });
+
+    document.getElementById('tiles-count-tag').innerText = `${playerHand.length} daş`;
+    boardDiv.scrollLeft = boardDiv.scrollWidth;
+}
+
+function playTile(idx) {
+    const tile = playerHand[idx];
+    if (boardTiles.length === 0) {
+        boardTiles.push(tile);
+        playerHand.splice(idx, 1);
+    } else {
+        let left = boardTiles[0][0];
+        let right = boardTiles[boardTiles.length - 1][1];
+        if (tile[0] === right || tile[1] === right) {
+            if (tile[0] !== right) tile.reverse();
+            boardTiles.push(tile);
+            playerHand.splice(idx, 1);
+        } else if (tile[0] === left || tile[1] === left) {
+            if (tile[1] !== left) tile.reverse();
+            boardTiles.unshift(tile);
+            playerHand.splice(idx, 1);
+        } else {
+            document.getElementById('game-status-text').innerText = "Bu daş uclara uymur!";
+            return;
+        }
+    }
+    document.getElementById('game-status-text').innerText = "Daşını seç";
+    renderGame();
+
+    if (playerHand.length === 0) {
+        myTea += 25;
+        localStorage.setItem('domino_tea', myTea);
+        document.getElementById('tea-val').innerText = myTea;
+        alert("Qalib gəldiniz! +25 Stəkan çay qazandınız.");
+        switchTab('home');
+    }
+}
+
+function drawTile() {
+    if (deck.length > 0) {
+        playerHand.push(deck.pop());
+        renderGame();
+    } else alert("Bazarda daş qalmayıb!");
+}
+
+function exitGame() {
+    switchTab('home');
+}

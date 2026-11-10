@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Dominoçu</title>
+    <link rel="manifest" href="manifest.json">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background-color: #0c2217; color: #f1f5f9; user-select: none; }
+        .domino-tile { width: 44px; height: 84px; background: #ffffff; color: #0f172a; border-radius: 8px; border: 2px solid #000; display: inline-flex; flex-direction: column; justify-content: space-around; align-items: center; font-weight: 700; cursor: pointer; flex-shrink: 0; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        .nav-item.active { color: #eab308; }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="flex flex-col min-h-screen">
+
+    <div id="app" class="flex-1 flex flex-col max-w-md mx-auto w-full pb-20">
+        <header class="p-4 flex items-center justify-between border-b border-emerald-900/50">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-emerald-800/60 border border-emerald-600/40 flex items-center justify-center font-bold text-amber-400">D</div>
+                <div>
+                    <div id="header-name" class="font-semibold text-sm">Oyuncu</div>
+                    <div class="text-xs text-emerald-400/80">Səviyyə 1</div>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 bg-emerald-950/80 border border-emerald-800/50 px-3 py-1.5 rounded-lg text-xs font-semibold text-amber-400">
+                <span>Stəkan: <span id="tea-val">0</span></span>
+            </div>
+        </header>
+
+        <main id="screen-home" class="p-4 flex-1 space-y-4">
+            <div class="bg-gradient-to-br from-amber-500 to-amber-600 rounded-2xl p-5 text-slate-950">
+                <div class="font-bold text-lg mb-1">1v1 Canlı Matç</div>
+                <div class="text-xs text-amber-950 font-medium mb-3">Standart qaydalar · Sürətli oyun</div>
+                <button onclick="startQuickMatch('1v1 Canlı Matç')" class="w-full bg-emerald-950 text-white font-semibold py-3 px-4 rounded-xl flex items-center justify-center gap-2 shadow-lg">Oyna</button>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div onclick="openCreateRoomModal()" class="bg-emerald-900/40 border border-emerald-800/60 p-4 rounded-xl cursor-pointer">
+                    <div class="font-semibold text-sm mb-1">Oyun yaradın</div>
+                    <div class="text-xs text-slate-400">Dostunla 1v1 oyna</div>
+                </div>
+                <div onclick="openJoinRoomModal()" class="bg-emerald-900/40 border border-emerald-800/60 p-4 rounded-xl cursor-pointer">
+                    <div class="font-semibold text-sm mb-1">Otağa qoşul</div>
+                    <div class="text-xs text-slate-400">Kodu daxil et</div>
+                </div>
+            </div>
+
+            <div class="bg-emerald-950/60 border border-emerald-800/50 p-4 rounded-xl space-y-3">
+                <div class="font-semibold text-sm text-emerald-400">Botlarla Oyna</div>
+                <div class="grid grid-cols-3 gap-2">
+                    <button onclick="setBotDiff('asan')" id="btn-diff-asan" class="py-2 text-xs font-medium rounded-lg border border-emerald-700/60 bg-emerald-900/50 text-slate-300">Asan</button>
+                    <button onclick="setBotDiff('orta')" id="btn-diff-orta" class="py-2 text-xs font-medium rounded-lg border border-amber-500/60 bg-amber-500/20 text-amber-300">Orta</button>
+                    <button onclick="setBotDiff('cetin')" id="btn-diff-cetin" class="py-2 text-xs font-medium rounded-lg border border-emerald-700/60 bg-emerald-900/50 text-slate-300">Çətin</button>
+                </div>
+                <div class="grid grid-cols-4 gap-1.5 pt-1">
+                    <button onclick="startBotMatch(2)" class="py-2 text-xs font-semibold rounded-lg bg-emerald-800/40 border border-emerald-700/40 text-slate-200">1v1</button>
+                    <button onclick="startBotMatch(3)" class="py-2 text-xs font-semibold rounded-lg bg-emerald-800/40 border border-emerald-700/40 text-slate-200">3-lü</button>
+                    <button onclick="startBotMatch(4)" class="py-2 text-xs font-semibold rounded-lg bg-emerald-800/40 border border-emerald-700/40 text-slate-200">4-lü</button>
+                    <button onclick="startBotMatch('2x2')" class="py-2 text-xs font-semibold rounded-lg bg-emerald-800/40 border border-emerald-700/40 text-slate-200">2x2</button>
+                </div>
+            </div>
+        </main>
+
+        <main id="screen-game" class="p-3 flex-1 flex-col justify-between hidden">
+            <div class="flex items-center justify-between text-xs text-slate-400 bg-emerald-950/60 p-2.5 rounded-lg border border-emerald-800/40">
+                <span id="game-mode-tag" class="text-amber-400 font-semibold">Matç</span>
+                <span id="game-status-text">Daşını seç</span>
+                <button onclick="exitGame()" class="text-rose-400 font-medium">Çıxış</button>
+            </div>
+            <div id="board" class="w-full h-44 my-3 bg-emerald-950/90 border-2 border-emerald-800/80 rounded-xl flex items-center justify-start overflow-x-auto p-3 gap-1 hide-scrollbar">
+                <span class="w-full text-center text-xs text-emerald-600 font-medium">Masa boşdur</span>
+            </div>
+            <div>
+                <div class="text-xs text-slate-400 mb-2 flex justify-between items-center px-1">
+                    <span>Sənin Daşların</span>
+                    <span id="tiles-count-tag" class="text-emerald-400 font-medium">7 daş</span>
+                </div>
+                <div id="hand" class="flex justify-start gap-1.5 overflow-x-auto py-2 px-1 hide-scrollbar"></div>
+                <div class="flex gap-2 mt-3">
+                    <button onclick="drawTile()" class="flex-1 py-2.5 bg-emerald-800/60 border border-emerald-600/50 rounded-xl text-xs font-semibold text-slate-200">Daş Çək</button>
+                    <button onclick="exitGame()" class="flex-1 py-2.5 bg-emerald-900/40 border border-emerald-800/50 rounded-xl text-xs font-semibold text-slate-400">Çıxış</button>
+                </div>
+            </div>
+        </main>
+
+        <main id="screen-friends" class="p-4 flex-1 space-y-4 hidden">
+            <div class="bg-emerald-950/60 border border-emerald-800/50 p-4 rounded-xl space-y-3">
+                <div class="font-semibold text-sm text-amber-400">Profil və İD</div>
+                <div class="flex justify-between items-center text-xs">
+                    <span class="text-slate-400">Unikal İD:</span>
+                    <span id="my-id-display" class="font-mono font-bold text-white bg-emerald-900/60 px-2 py-1 rounded">DOM-0000</span>
+                </div>
+                <input type="text" id="name-input" placeholder="Ləqəbini dəyiş..." class="w-full bg-emerald-900/40 border border-emerald-700/50 rounded-lg p-2.5 text-xs text-white">
+                <button onclick="updateProfileName()" class="w-full py-2 bg-amber-500 text-slate-950 font-bold text-xs rounded-lg">Yadda Saxla</button>
+            </div>
+        </main>
+
+        <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-emerald-950/95 border-t border-emerald-800/50 px-6 py-3 flex justify-around items-center">
+            <button onclick="switchTab('home')" id="nav-home" class="nav-item active flex flex-col items-center gap-1">
+                <span class="text-[10px] font-medium">Əsas</span>
+            </button>
+            <button onclick="switchTab('friends')" id="nav-friends" class="nav-item flex flex-col items-center gap-1 text-slate-400">
+                <span class="text-[10px] font-medium">Profil</span>
+            </button>
+        </nav>
+    </div>
+
+    <div id="modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 hidden z-50">
+        <div class="bg-emerald-950 border border-emerald-800/80 rounded-2xl p-5 w-full max-w-xs space-y-4">
+            <div id="modal-title" class="font-bold text-sm text-amber-400 text-center"></div>
+            <div id="modal-body" class="space-y-3"></div>
+            <button onclick="closeModal()" class="w-full py-2 bg-emerald-900/60 border border-emerald-700/50 text-xs font-semibold rounded-xl text-slate-300">Bağla</button>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+</body>
+</html>
